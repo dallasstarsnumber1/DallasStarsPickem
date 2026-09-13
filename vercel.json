@@ -1,13 +1,12 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/dallas-stars-schedule.html", "destination": "/dallas-stars-schedule.html" },
-    { "source": "/", "destination": "/dallas-stars-schedule.html" }
-  ],
   "functions": {
     "api/index.py": {
       "memory": 256,
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/", "destination": "/dallas-stars-schedule.html" }
+  ]
 }

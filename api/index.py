@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 
 # --- Supabase Config ---
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fnosqjpdvqzwiqfckowf.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZub3NxanBkdnF6d2lxZmNrb3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzYwMjUsImV4cCI6MjEwNDg1MjAyNX0.iDD-ymzz3d4fM20LeBg5R_Z7sEqiVs1eCzUfkoCHNY4")
 supabase: Client = None
 
 def get_supabase():
