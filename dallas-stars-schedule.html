@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dallas Stars 2026-2027 Pick'em</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; position: relative; background: #0a0a0a; }
+body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background: url('stars_bg.jpg') center / cover no-repeat; filter: brightness(0.35) saturate(1.1); background-color: #0a0a0a; }
+body::after { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0.7) 100%); }
+
+/* LOGIN SCREEN */
+.login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+.login-box { background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 48px 40px; text-align: center; max-width: 400px; width: 90%; }
+.login-box .logo { width: 100px; height: 100px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(0,104,71,0.3)); }
+.login-box h1 { font-family: 'Oswald', sans-serif; font-size: 2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 4px; }
+.login-box h1 span { color: #006847; }
+.login-box p { color: #888; font-size: 0.9rem; margin-bottom: 24px; }
+.login-box input { width: 100%; padding: 14px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 1.1rem; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-align: center; outline: none; transition: all 0.2s; }
+.login-box input:focus { border-color: #006847; box-shadow: 0 0 15px rgba(0,104,71,0.2); }
+.login-box input::placeholder { color: #555; }
+.login-box button { margin-top: 16px; width: 100%; padding: 14px; border-radius: 10px; border: none; background: #006847; color: #fff; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+.login-box button:hover { background: #00855a; transform: translateY(-1px); }
+.login-box .error { color: #d46a7a; font-size: 0.8rem; margin-top: 10px; display: none; }
+.login-overlay.hidden { display: none; }
+
+.container { max-width: 960px; width: 100%; padding: 40px 24px; position: relative; z-index: 1; }
+.header { text-align: center; padding: 40px 20px 30px; margin-bottom: 24px; position: relative; }
+.header::after { content: ''; position: absolute; bottom: 0; left: 10%; width: 80%; height: 2px; background: linear-gradient(90deg, transparent, #006847, #b4975a, #006847, transparent); }
+.header .stars { font-size: 3rem; letter-spacing: 8px; color: #b4975a; margin-bottom: 8px; }
+.header h1 { font-family: 'Oswald', sans-serif; font-size: 3.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 4px; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.8); }
+.header h1 span { color: #006847; }
+.header .subtitle { font-size: 1rem; color: #b4975a; text-transform: uppercase; letter-spacing: 6px; margin-top: 8px; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+.header .dallas-logo { width: 80px; height: 80px; margin-bottom: 12px; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
+
+/* USER BAR */
+.user-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 20px; }
+.user-bar .user-info { display: flex; align-items: center; gap: 10px; }
+.user-bar .avatar { width: 36px; height: 36px; border-radius: 50%; background: #006847; display: flex; align-items: center; justify-content: center; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.1rem; color: #fff; }
+.user-bar .username { font-weight: 600; font-size: 0.95rem; color: #ddd; }
+.user-bar .last-refresh { font-size: 0.7rem; color: #666; }
+.user-bar .logout-btn { font-family: 'Oswald', sans-serif; font-size: 0.7rem; padding: 5px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+.user-bar .logout-btn:hover { border-color: rgba(180,80,80,0.4); color: #d46a7a; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid rgba(255,255,255,0.1); }
+.tab-btn { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 600; padding: 12px 28px; background: rgba(0,0,0,0.5); border: none; color: #888; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all 0.2s; border-bottom: 3px solid transparent; margin-bottom: -2px; backdrop-filter: blur(8px); }
+.tab-btn:hover { color: #ccc; background: rgba(0,0,0,0.6); }
+.tab-btn.active { color: #b4975a; border-bottom-color: #b4975a; background: rgba(0,0,0,0.4); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.pick-counter { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.pick-counter .stat { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 22px; text-align: center; min-width: 110px; }
+.pick-counter .stat .num { font-family: 'Oswald', sans-serif; font-size: 1.8rem; font-weight: 700; }
+.pick-counter .stat .label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.pick-counter .stat.stars-pick .num { color: #006847; }
+.pick-counter .stat.opp-pick .num { color: #b4975a; }
+.pick-counter .stat.unpicked .num { color: #888; }
+.pick-counter .stat.total .num { color: #fff; }
+
+.results-summary { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+.results-summary .stat { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px 24px; text-align: center; min-width: 130px; }
+.results-summary .stat .num { font-family: 'Oswald', sans-serif; font-size: 2.2rem; font-weight: 700; }
+.results-summary .stat .label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.results-summary .stat .sub { font-size: 0.65rem; color: #666; margin-top: 2px; }
+.results-summary .stat.correct .num { color: #00b86b; }
+.results-summary .stat.wrong .num { color: #d46a7a; }
+.results-summary .stat.pct .num { color: #fff; }
+.results-summary .stat.remaining .num { color: #b4975a; }
+.results-summary .stat.max .num { color: #006847; }
+
+.pick-actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+.pick-actions button { font-family: 'Oswald', sans-serif; font-size: 0.85rem; padding: 8px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); color: #ccc; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+.pick-actions button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.pick-actions button.reset-btn { border-color: rgba(180,50,50,0.4); color: #d46a7a; }
+.pick-actions button.reset-btn:hover { background: rgba(180,50,50,0.2); }
+
+.month-section { margin-bottom: 28px; }
+.month-header { font-family: 'Oswald', sans-serif; font-size: 1.4rem; font-weight: 600; color: #b4975a; text-transform: uppercase; letter-spacing: 3px; padding: 10px 0 6px; border-bottom: 2px solid rgba(180,151,90,0.2); margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+.month-header .line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(180,151,90,0.2), transparent); }
+
+.game-row { display: flex; align-items: center; padding: 6px 10px; border-radius: 8px; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.9rem; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); margin-bottom: 2px; }
+.game-row:hover { background: rgba(0,0,0,0.5); }
+.game-date { font-family: 'Oswald', sans-serif; font-size: 0.95rem; font-weight: 600; color: #b4975a; min-width: 65px; letter-spacing: 1px; }
+.game-team { flex: 1; font-weight: 500; letter-spacing: 0.3px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.game-team .team-logo { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.game-team .team-logo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.game-vs { font-family: 'Oswald', sans-serif; font-size: 0.7rem; color: #888; letter-spacing: 2px; min-width: 20px; text-align: center; }
+.game-location { font-size: 0.7rem; color: #999; min-width: 38px; text-align: right; letter-spacing: 0.5px; }
+.location-home { color: #006847; font-weight: 600; }
+.location-away { color: #b4975a; font-weight: 600; }
+
+.pick-group { display: flex; gap: 3px; min-width: 100px; justify-content: flex-end; }
+.pick-btn { font-family: 'Oswald', sans-serif; font-size: 0.65rem; font-weight: 600; padding: 3px 8px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #888; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s; }
+.pick-btn:hover { border-color: rgba(255,255,255,0.3); color: #ccc; }
+.pick-btn.active-dal { background: rgba(0,104,71,0.35); border-color: #006847; color: #00b86b; }
+.pick-btn.active-opp { background: rgba(180,151,90,0.3); border-color: #b4975a; color: #d4b86a; }
+
+.status-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block; min-width: 50px; text-align: center; }
+.status-fut { background: rgba(255,255,255,0.08); color: #888; }
+.status-live { background: rgba(0,180,255,0.2); color: #00b4ff; }
+.status-final { background: rgba(0,104,71,0.2); color: #00b86b; }
+.status-win { background: rgba(0,104,71,0.25); color: #00b86b; }
+.status-loss { background: rgba(180,80,80,0.2); color: #d46a7a; }
+
+.result-col { min-width: 70px; text-align: center; font-size: 0.8rem; }
+.pick-col { min-width: 70px; text-align: center; font-size: 0.75rem; color: #999; }
+.pick-col .pick-dal { color: #00b86b; }
+.pick-col .pick-opp { color: #d4b86a; }
+.pick-col .no-pick { color: #555; }
+
+.footer { text-align: center; padding: 40px 20px; color: #666; font-size: 0.85rem; letter-spacing: 1px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 20px; }
+.footer .star { color: #b4975a; margin: 0 4px; }
+
+.team-key { margin-top: 36px; padding: 24px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+.team-key h3 { font-family: 'Oswald', sans-serif; color: #b4975a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; font-size: 1rem; }
+.team-key .key-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; font-size: 0.85rem; color: #aaa; }
+.team-key .key-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.team-key .key-item img { width: 20px; height: 20px; object-fit: contain; }
+
+@media (max-width: 600px) {
+  .header h1 { font-size: 2.2rem; } .header .dallas-logo { width: 60px; height: 60px; }
+  .game-row { flex-wrap: nowrap; padding: 5px 4px; gap: 2px; font-size: 0.75rem; }
+  .game-date { min-width: 45px; font-size: 0.75rem; }
+  .game-team { font-size: 0.72rem; gap: 4px; }
+  .game-team .team-logo { width: 20px; height: 20px; }
+  .game-location { display: none; }
+  .pick-group { min-width: 72px; gap: 2px; }
+  .pick-btn { font-size: 0.55rem; padding: 2px 5px; }
+  .pick-counter .stat { padding: 10px 12px; min-width: 75px; }
+  .pick-counter .stat .num { font-size: 1.3rem; }
+  .results-summary .stat { padding: 12px 14px; min-width: 80px; }
+  .results-summary .stat .num { font-size: 1.5rem; }
+  .container { padding: 16px 8px; }
+  .tab-btn { font-size: 0.8rem; padding: 10px 14px; }
+  .result-col { min-width: 50px; font-size: 0.7rem; }
+  .pick-col { min-width: 50px; font-size: 0.65rem; }
+  .login-box { padding: 32px 24px; }
+  .login-box h1 { font-size: 1.5rem; }
+  .user-bar { flex-wrap: wrap; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SHARE DIALOG -->
+<div class="login-overlay" id="shareOverlay" style="z-index:999;">
+  <div class="login-box">
+    <h1>Share <span>Invite</span></h1>
+    <p style="margin-bottom:16px;">Send the link to friends so they can join the pool!</p>
+    <input type="tel" id="sharePhoneInput" placeholder="Enter phone number (e.g. 15551234567)" maxlength="20" autocomplete="off" style="width:100%;padding:14px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;font-family:'Inter',sans-serif;text-align:center;outline:none;">
+    <button onclick="sendSMSSingle()" style="margin-top:12px;">&#128231; Send via SMS</button>
+    <p style="color:#555;font-size:0.75rem;margin:10px 0;">Or add multiple numbers (one per line):</p>
+    <textarea id="shareBulkPhones" placeholder="+15551234567&#10;+15559876543&#10;+15555550000" rows="3" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:0.9rem;font-family:'Inter',sans-serif;outline:none;resize:none;"></textarea>
+    <button onclick="sendSMSBulk()" style="margin-top:12px;background:#b4975a;">&#128231; Send to All</button>
+    <button onclick="copyLink()" style="margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:#888;">&#128203; Copy Link Instead</button>
+    <button onclick="closeShareDialog()" style="margin-top:4px;background:transparent;border:none;color:#555;font-size:0.8rem;">Close</button>
+    <div class="error" id="shareError" style="display:none;">Please enter at least one phone number</div>
+  </div>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <img class="logo" src="https://assets.nhle.com/logos/nhl/svg/DAL_light.svg" alt="Dallas Stars">
+    <h1>Dallas <span>Stars</span></h1>
+    <p>2026-2027 Season Pick'em</p>
+    <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20" autocomplete="off">
+    <input type="tel" id="phoneInput" placeholder="Your phone number (optional)" maxlength="15" autocomplete="off" style="margin-top:10px;width:100%;padding:14px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;font-family:'Inter',sans-serif;text-align:center;outline:none;transition:all 0.2s;">
+    <button onclick="login()">Let's Go! &#9733;</button>
+    <div class="error" id="loginError">Please enter a username</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="stars">&#9733; &#9733; &#9733;</div>
+    <img class="dallas-logo" src="https://assets.nhle.com/logos/nhl/svg/DAL_light.svg" alt="Dallas Stars">
+    <h1>Dallas <span>Stars</span></h1>
+    <div class="subtitle">2026 &ndash; 2027 Season Pick'em</div>
+  </div>
+
+  <!-- USER BAR -->
+  <div class="user-bar" id="userBar">
+    <div class="user-info">
+      <div class="avatar" id="userAvatar">J</div>
+      <div>
+        <div class="username" id="userDisplayName">Player</div>
+        <div class="last-refresh" id="refreshInfo">Auto-refreshes daily at 12:00 PM</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="showShareDialog()">&#128231; Share</button>
+    <button class="logout-btn" onclick="logout()">&#8635; Switch</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-pick" onclick="switchTab('pick')">&#9997; Pick'em</button>
+    <button class="tab-btn" id="tab-results" onclick="switchTab('results')">&#128202; Results</button>
+    <button class="tab-btn" id="tab-leaderboard" onclick="switchTab('leaderboard')">&#127942; Pool</button>
+    <button class="tab-btn" id="tab-invite" onclick="switchTab('invite')">&#128101; + Pool</button>
+  </div>
+
+  <div class="tab-content active" id="tab-content-pick">
+    <!-- INVITE BAR - right at the top of Pick'em page -->
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(0,104,71,0.12);border:1px solid rgba(0,104,71,0.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;">
+      <span style="font-family:'Oswald',sans-serif;font-size:0.85rem;color:#b4975a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">&#128231; Invite:</span>
+      <input type="tel" id="pickInvitePhone" placeholder="Friend's phone number (e.g. 15551234567)" maxlength="20" style="flex:1;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#fff;font-size:0.85rem;font-family:'Inter',sans-serif;outline:none;min-width:0;">
+      <button onclick="sendPickInvite()" style="padding:8px 16px;border-radius:6px;border:none;background:#006847;color:#fff;font-family:'Oswald',sans-serif;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;white-space:nowrap;">Send Text</button>
+      <div id="pickInviteStatus" style="font-size:0.75rem;color:#888;display:none;white-space:nowrap;"></div>
+    </div>
+
+    <div class="pick-counter" id="counter"></div>
+    <div class="pick-actions">
+      <button class="reset-btn" onclick="resetPicks()">&#8635; Reset All Picks</button>
+    </div>
+    <div id="schedule"></div>
+  </div>
+
+  <div class="tab-content" id="tab-content-results">
+    <div class="results-summary" id="results-summary"></div>
+    <div class="last-updated" id="last-updated">Waiting for NHL data...</div>
+    <div id="results-table"></div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div class="tab-content" id="tab-content-leaderboard">
+    <div style="text-align:center;margin-bottom:16px;">
+      <p style="color:#888;font-size:0.9rem;">Invite friends by sending them the link! Their picks will show up here.</p>
+      <button onclick="showShareDialog()" style="margin-top:10px;font-family:'Oswald',sans-serif;font-size:0.9rem;padding:10px 28px;border-radius:8px;border:1px solid rgba(0,104,71,0.4);background:rgba(0,104,71,0.15);color:#00b86b;cursor:pointer;text-transform:uppercase;letter-spacing:2px;">&#128231; Share via Text / SMS</button>
+    </div>
+    <div class="results-summary" id="pool-summary"></div>
+    <div class="last-updated" id="leaderboard-updated">Loading leaderboard...</div>
+    <div id="leaderboard-table"></div>
+  </div>
+
+  <!-- MAKE A POOL TAB -->
+  <div class="tab-content" id="tab-content-invite">
+    <div class="month-section">
+      <div class="month-header">&#128101; Make a Pool & Add Friends <span class="line"></span></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);border-radius:12px;border:1px solid rgba(255,255,255,0.06);padding:28px;max-width:500px;margin:0 auto;">
+      <p style="color:#b4975a;font-family:'Oswald',sans-serif;font-size:1.1rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Create Your Pool</p>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:20px;">Add friends by their phone number. They'll get a text to join your Pick'em pool!</p>
+      
+      <label style="color:#aaa;font-size:0.8rem;display:block;margin-bottom:4px;">Your Name</label>
+      <input type="text" id="inviteYourName" readonly style="width:100%;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#b4975a;font-size:1rem;font-family:'Oswald',sans-serif;letter-spacing:1px;outline:none;margin-bottom:16px;">
+      
+      <label style="color:#aaa;font-size:0.8rem;display:block;margin-bottom:4px;">Friend's Name</label>
+      <input type="text" id="inviteFriendName" placeholder="e.g. Sarah" maxlength="20" style="width:100%;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:16px;">
+      
+      <label style="color:#aaa;font-size:0.8rem;display:block;margin-bottom:4px;">Friend's Phone Number</label>
+      <input type="tel" id="invitePhone" placeholder="e.g. 15551234567" maxlength="20" style="width:100%;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;">
+      <p style="color:#555;font-size:0.7rem;margin-bottom:16px;">Enter the full number with country code (no dashes)</p>
+      
+      <button onclick="sendInvite()" style="width:100%;padding:14px;border-radius:10px;border:none;background:#006847;color:#fff;font-family:'Oswald',sans-serif;font-size:1rem;font-weight:600;text-transform:uppercase;letter-spacing:2px;cursor:pointer;">&#128231; Send Invite via SMS</button>
+      <div id="inviteStatus" style="margin-top:12px;text-align:center;font-size:0.85rem;color:#888;display:none;"></div>
+      
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+        <p style="color:#888;font-size:0.85rem;margin-bottom:10px;text-align:center;">&#128203; Or copy the link and send it yourself:</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="inviteLink" readonly style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#888;font-size:0.8rem;outline:none;font-family:'Inter',sans-serif;">
+          <button onclick="copyInviteLink()" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#ccc;cursor:pointer;font-family:'Oswald',sans-serif;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="star">&#9733;</span> Dallas Stars 2026-2027 Pick'em <span class="star">&#9733;</span>
+  </div>
+</div>
+
+<script>
+const games = [
+  ["09-19","AWAY","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["09-21","HOME","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["09-23","HOME","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["09-25","AWAY","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["10-02","HOME","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["10-03","AWAY","NSH","Nashville Predators","https://assets.nhle.com/logos/nhl/svg/NSH_light.svg"],
+  ["10-05","HOME","SJS","San Jose Sharks","https://a.espncdn.com/combiner/i?img=/i/teamlogos/nhl/500/sj.png&h=200&w=200"],
+  ["10-08","AWAY","BUF","Buffalo Sabres","https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"],
+  ["10-10","AWAY","PIT","Pittsburgh Penguins","https://assets.nhle.com/logos/nhl/svg/PIT_light.svg"],
+  ["10-13","HOME","COL","Colorado Avalanche","https://assets.nhle.com/logos/nhl/svg/COL_light.svg"],
+  ["10-14","AWAY","COL","Colorado Avalanche","https://assets.nhle.com/logos/nhl/svg/COL_light.svg"],
+  ["10-17","AWAY","CHI","Chicago Blackhawks","https://assets.nhle.com/logos/nhl/svg/CHI_light.svg"],
+  ["10-20","HOME","BOS","Boston Bruins","https://assets.nhle.com/logos/nhl/svg/BOS_light.svg"],
+  ["10-22","HOME","WPG","Winnipeg Jets","https://assets.nhle.com/logos/nhl/svg/WPG_light.svg"],
+  ["10-25","HOME","NYI","New York Islanders","https://assets.nhle.com/logos/nhl/svg/NYI_light.svg"],
+  ["10-27","HOME","NJD","New Jersey Devils","https://assets.nhle.com/logos/nhl/svg/NJD_light.svg"],
+  ["10-29","HOME","MTL","Montreal Canadiens","https://assets.nhle.com/logos/nhl/svg/MTL_light.svg"],
+  ["10-31","HOME","CBJ","Columbus Blue Jackets","https://assets.nhle.com/logos/nhl/svg/CBJ_light.svg"],
+  ["11-03","AWAY","WSH","Washington Capitals","https://assets.nhle.com/logos/nhl/svg/WSH_light.svg"],
+  ["11-05","AWAY","CBJ","Columbus Blue Jackets","https://assets.nhle.com/logos/nhl/svg/CBJ_light.svg"],
+  ["11-07","HOME","SJS","San Jose Sharks","https://a.espncdn.com/combiner/i?img=/i/teamlogos/nhl/500/sj.png&h=200&w=200"],
+  ["11-12","HOME","WPG","Winnipeg Jets","https://assets.nhle.com/logos/nhl/svg/WPG_light.svg"],
+  ["11-14","HOME","BUF","Buffalo Sabres","https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"],
+  ["11-15","HOME","FLA","Florida Panthers","https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"],
+  ["11-17","AWAY","VGK","Vegas Golden Knights","https://assets.nhle.com/logos/nhl/svg/VGK_light.svg"],
+  ["11-19","AWAY","VGK","Vegas Golden Knights","https://assets.nhle.com/logos/nhl/svg/VGK_light.svg"],
+  ["11-22","HOME","PIT","Pittsburgh Penguins","https://assets.nhle.com/logos/nhl/svg/PIT_light.svg"],
+  ["11-25","HOME","NSH","Nashville Predators","https://assets.nhle.com/logos/nhl/svg/NSH_light.svg"],
+  ["11-27","AWAY","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["11-28","HOME","UTA","Utah Mammoth","https://upload.wikimedia.org/wikipedia/en/9/9c/UtahMammoth.svg"],
+  ["12-01","AWAY","SEA","Seattle Kraken","https://assets.nhle.com/logos/nhl/svg/SEA_light.svg"],
+  ["12-03","AWAY","SEA","Seattle Kraken","https://assets.nhle.com/logos/nhl/svg/SEA_light.svg"],
+  ["12-05","AWAY","VAN","Vancouver Canucks","https://assets.nhle.com/logos/nhl/svg/VAN_light.svg"],
+  ["12-09","HOME","TOR","Toronto Maple Leafs","https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"],
+  ["12-12","HOME","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["12-15","HOME","WSH","Washington Capitals","https://assets.nhle.com/logos/nhl/svg/WSH_light.svg"],
+  ["12-17","AWAY","EDM","Edmonton Oilers","https://assets.nhle.com/logos/nhl/svg/EDM_light.svg"],
+  ["12-19","AWAY","WPG","Winnipeg Jets","https://assets.nhle.com/logos/nhl/svg/WPG_light.svg"],
+  ["12-20","AWAY","WPG","Winnipeg Jets","https://assets.nhle.com/logos/nhl/svg/WPG_light.svg"],
+  ["12-22","HOME","CGY","Calgary Flames","https://assets.nhle.com/logos/nhl/svg/CGY_light.svg"],
+  ["12-27","AWAY","MTL","Montreal Canadiens","https://assets.nhle.com/logos/nhl/svg/MTL_light.svg"],
+  ["12-29","AWAY","OTT","Ottawa Senators","https://assets.nhle.com/logos/nhl/svg/OTT_light.svg"],
+  ["12-31","HOME","NYR","New York Rangers","https://assets.nhle.com/logos/nhl/svg/NYR_light.svg"],
+  ["01-02","HOME","CHI","Chicago Blackhawks","https://assets.nhle.com/logos/nhl/svg/CHI_light.svg"],
+  ["01-04","HOME","DET","Detroit Red Wings","https://assets.nhle.com/logos/nhl/svg/DET_light.svg"],
+  ["01-06","AWAY","SJS","San Jose Sharks","https://a.espncdn.com/combiner/i?img=/i/teamlogos/nhl/500/sj.png&h=200&w=200"],
+  ["01-08","AWAY","ANA","Anaheim Ducks","https://assets.nhle.com/logos/nhl/svg/ANA_light.svg"],
+  ["01-09","AWAY","LAK","Los Angeles Kings","https://assets.nhle.com/logos/nhl/svg/LAK_light.svg"],
+  ["01-12","HOME","OTT","Ottawa Senators","https://assets.nhle.com/logos/nhl/svg/OTT_light.svg"],
+  ["01-14","AWAY","BOS","Boston Bruins","https://assets.nhle.com/logos/nhl/svg/BOS_light.svg"],
+  ["01-15","AWAY","NYI","New York Islanders","https://assets.nhle.com/logos/nhl/svg/NYI_light.svg"],
+  ["01-17","AWAY","NYR","New York Rangers","https://assets.nhle.com/logos/nhl/svg/NYR_light.svg"],
+  ["01-19","AWAY","NJD","New Jersey Devils","https://assets.nhle.com/logos/nhl/svg/NJD_light.svg"],
+  ["01-20","AWAY","CHI","Chicago Blackhawks","https://assets.nhle.com/logos/nhl/svg/CHI_light.svg"],
+  ["01-22","HOME","COL","Colorado Avalanche","https://assets.nhle.com/logos/nhl/svg/COL_light.svg"],
+  ["01-24","AWAY","COL","Colorado Avalanche","https://assets.nhle.com/logos/nhl/svg/COL_light.svg"],
+  ["01-26","HOME","ANA","Anaheim Ducks","https://assets.nhle.com/logos/nhl/svg/ANA_light.svg"],
+  ["01-28","HOME","VAN","Vancouver Canucks","https://assets.nhle.com/logos/nhl/svg/VAN_light.svg"],
+  ["01-30","AWAY","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["02-08","HOME","LAK","Los Angeles Kings","https://assets.nhle.com/logos/nhl/svg/LAK_light.svg"],
+  ["02-12","AWAY","TBL","Tampa Bay Lightning","https://assets.nhle.com/logos/nhl/svg/TBL_light.svg"],
+  ["02-13","AWAY","FLA","Florida Panthers","https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"],
+  ["02-16","HOME","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["02-18","HOME","PHI","Philadelphia Flyers","https://assets.nhle.com/logos/nhl/svg/PHI_light.svg"],
+  ["02-20","HOME","VGK","Vegas Golden Knights","https://assets.nhle.com/logos/nhl/svg/VGK_light.svg"],
+  ["02-23","HOME","VAN","Vancouver Canucks","https://assets.nhle.com/logos/nhl/svg/VAN_light.svg"],
+  ["02-25","HOME","TBL","Tampa Bay Lightning","https://assets.nhle.com/logos/nhl/svg/TBL_light.svg"],
+  ["02-27","HOME","EDM","Edmonton Oilers","https://assets.nhle.com/logos/nhl/svg/EDM_light.svg"],
+  ["02-28","AWAY","STL","St. Louis Blues","https://assets.nhle.com/logos/nhl/svg/STL_light.svg"],
+  ["03-03","HOME","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["03-05","AWAY","PHI","Philadelphia Flyers","https://assets.nhle.com/logos/nhl/svg/PHI_light.svg"],
+  ["03-06","AWAY","DET","Detroit Red Wings","https://assets.nhle.com/logos/nhl/svg/DET_light.svg"],
+  ["03-08","AWAY","TOR","Toronto Maple Leafs","https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"],
+  ["03-10","HOME","ANA","Anaheim Ducks","https://assets.nhle.com/logos/nhl/svg/ANA_light.svg"],
+  ["03-13","AWAY","LAK","Los Angeles Kings","https://assets.nhle.com/logos/nhl/svg/LAK_light.svg"],
+  ["03-15","AWAY","UTA","Utah Mammoth","https://upload.wikimedia.org/wikipedia/en/9/9c/UtahMammoth.svg"],
+  ["03-17","AWAY","CGY","Calgary Flames","https://assets.nhle.com/logos/nhl/svg/CGY_light.svg"],
+  ["03-20","AWAY","EDM","Edmonton Oilers","https://assets.nhle.com/logos/nhl/svg/EDM_light.svg"],
+  ["03-23","HOME","CAR","Carolina Hurricanes","https://assets.nhle.com/logos/nhl/svg/CAR_light.svg"],
+  ["03-25","AWAY","CAR","Carolina Hurricanes","https://assets.nhle.com/logos/nhl/svg/CAR_light.svg"],
+  ["03-27","HOME","NSH","Nashville Predators","https://assets.nhle.com/logos/nhl/svg/NSH_light.svg"],
+  ["03-30","HOME","CGY","Calgary Flames","https://assets.nhle.com/logos/nhl/svg/CGY_light.svg"],
+  ["04-02","AWAY","MIN","Minnesota Wild","https://assets.nhle.com/logos/nhl/svg/MIN_light.svg"],
+  ["04-03","HOME","CHI","Chicago Blackhawks","https://assets.nhle.com/logos/nhl/svg/CHI_light.svg"],
+  ["04-05","HOME","SEA","Seattle Kraken","https://assets.nhle.com/logos/nhl/svg/SEA_light.svg"],
+  ["04-07","AWAY","UTA","Utah Mammoth","https://upload.wikimedia.org/wikipedia/en/9/9c/UtahMammoth.svg"],
+  ["04-09","HOME","UTA","Utah Mammoth","https://upload.wikimedia.org/wikipedia/en/9/9c/UtahMammoth.svg"],
+  ["04-10","AWAY","NSH","Nashville Predators","https://assets.nhle.com/logos/nhl/svg/NSH_light.svg"]
+];
+
+const STORAGE_PREFIX = 'dallasStars_';
+const NHL_API_BASE = 'https://api-web.nhle.com/v1/club-schedule/DAL/week/';
+
+let picks = {};
+let actualResults = {};
+let username = '';
+
+// ====== LOGIN ======
+function login() {
+  const input = document.getElementById('usernameInput');
+  const phoneInput = document.getElementById('phoneInput');
+  const name = input.value.trim();
+  if (!name) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginError').style.display = 'none';
+  username = name;
+  localStorage.setItem(STORAGE_PREFIX + 'username', username);
+  localStorage.setItem(STORAGE_PREFIX + 'phone', phoneInput.value.trim());
+  document.getElementById('loginOverlay').classList.add('hidden');
+  initApp();
+}
+
+function logout() {
+  if (!confirm('Switch user? Your picks will be saved under this username.')) return;
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('usernameInput').value = '';
+  document.getElementById('usernameInput').focus();
+}
+
+function checkSavedUser() {
+  const saved = localStorage.getItem(STORAGE_PREFIX + 'username');
+  if (saved) {
+    username = saved;
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initApp();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('usernameInput').focus();
+  }
+}
+
+// ====== SAVED PICKS PER USER ======
+function getStorageKey() {
+  return STORAGE_PREFIX + 'picks_' + username;
+}
+
+function loadPicks() {
+  try { const s = localStorage.getItem(getStorageKey()); if (s) picks = JSON.parse(s); } catch(e) {}
+}
+function savePicksToStorage() {
+  localStorage.setItem(getStorageKey(), JSON.stringify(picks));
+}
+
+// ====== NHL API ======
+async function fetchResults() {
+  const weeks = ['2026-09-19','2026-09-26','2026-10-03','2026-10-10','2026-10-17','2026-10-24','2026-10-31','2026-11-07','2026-11-14','2026-11-21','2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-06','2027-02-13','2027-02-20','2027-02-27','2027-03-06','2027-03-13','2027-03-20','2027-03-27','2027-04-03','2027-04-10'];
+  const seen = new Set();
+  for (const start of weeks) {
+    try {
+      const resp = await fetch(NHL_API_BASE + start);
+      const data = await resp.json();
+      for (const g of (data.games || [])) {
+        const gid = g.id;
+        if (seen.has(gid)) continue;
+        seen.add(gid);
+        const date = g.gameDate;
+        const home = g.homeTeam?.abbrev;
+        const away = g.awayTeam?.abbrev;
+        const homeScore = g.homeTeam?.score;
+        const awayScore = g.awayTeam?.score;
+        const status = g.gameState;
+        const dateMMDD = date.slice(5);
+        const opp = home === 'DAL' ? away : home;
+        const loc = home === 'DAL' ? 'HOME' : 'AWAY';
+        for (let i = 0; i < games.length; i++) {
+          if (games[i][0] === dateMMDD && games[i][1] === loc && games[i][2] === opp) {
+            let winner = '';
+            if (status === 'FINAL' && homeScore != null && awayScore != null) {
+              if (homeScore > awayScore) winner = home;
+              else if (awayScore > homeScore) winner = away;
+              else winner = 'TIE';
+            }
+            actualResults[i] = { winner, homeScore: homeScore != null ? homeScore : '-', awayScore: awayScore != null ? awayScore : '-', status, home, away };
+            break;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+  const now = new Date();
+  localStorage.setItem(STORAGE_PREFIX + 'lastRefresh', now.toISOString());
+  document.getElementById('last-updated').textContent = 'Last updated: ' + now.toLocaleString() + ' | Data from NHL.com';
+  renderResults();
+}
+
+// ====== DAILY AUTO-REFRESH AT 12:00 PM ======
+function scheduleDailyRefresh() {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(12, 0, 0, 0); // 12:00 PM
+  if (now >= target) {
+    target.setDate(target.getDate() + 1); // next day
+  }
+  const msUntilNoon = target - now;
+  setTimeout(() => {
+    fetchResults();
+    // Reschedule for next day
+    scheduleDailyRefresh();
+  }, msUntilNoon);
+  console.log(`Next NHL auto-refresh scheduled for: ${target.toLocaleString()}`);
+}
+
+// ====== PICKS ======
+function pickGame(idx, choice) {
+  if (picks[idx] === choice) delete picks[idx];
+  else picks[idx] = choice;
+  renderSchedule();
+  updateCounter();
+  savePicksToStorage();
+  syncPicksToServer();
+}
+
+function resetPicks() {
+  if (!confirm('Reset all your picks?')) return;
+  picks = {};
+  localStorage.removeItem(getStorageKey());
+  renderSchedule();
+  updateCounter();
+}
+
+function updateCounter() {
+  let stars = 0, opp = 0;
+  Object.values(picks).forEach(v => { if (v === 'dal') stars++; else if (v === 'opp') opp++; });
+  const unpicked = games.length - stars - opp;
+  document.getElementById('counter').innerHTML =
+    `<div class="stat stars-pick"><div class="num">${stars}</div><div class="label">Stars Picks</div></div>` +
+    `<div class="stat opp-pick"><div class="num">${opp}</div><div class="label">Opponent Picks</div></div>` +
+    `<div class="stat unpicked"><div class="num">${unpicked}</div><div class="label">Unpicked</div></div>` +
+    `<div class="stat total"><div class="num">${games.length}</div><div class="label">Total Games</div></div>`;
+}
+
+function renderSchedule() {
+  const months = [
+    {id:'sep', label:'September', prefix:'09'},{id:'oct', label:'October', prefix:'10'},
+    {id:'nov', label:'November', prefix:'11'},{id:'dec', label:'December', prefix:'12'},
+    {id:'jan', label:'January', prefix:'01'},{id:'feb', label:'February', prefix:'02'},
+    {id:'mar', label:'March', prefix:'03'},{id:'apr', label:'April', prefix:'04'}
+  ];
+  let html = '';
+  months.forEach(m => {
+    const mg = games.filter((g, i) => g[0].startsWith(m.prefix));
+    if (!mg.length) return;
+    html += `<div class="month-section"><div class="month-header">${m.label} <span class="line"></span></div>`;
+    mg.forEach(g => {
+      const idx = games.indexOf(g);
+      const [date, loc, abbr, name, logo] = g;
+      const vs = loc === 'HOME' ? 'vs' : '@';
+      const locClass = loc === 'HOME' ? 'location-home' : 'location-away';
+      const locText = loc === 'HOME' ? 'Home' : 'Away';
+      const pick = picks[idx];
+      const dalActive = pick === 'dal' ? 'active-dal' : '';
+      const oppActive = pick === 'opp' ? 'active-opp' : '';
+      html += `<div class="game-row">` +
+        `<div class="game-date">${date}</div>` +
+        `<div class="game-team"><span class="team-logo"><img src="${logo}" alt="${name}"></span> ${name}</div>` +
+        `<div class="game-vs">${vs}</div><div class="game-location ${locClass}">${locText}</div>` +
+        `<div class="pick-group">` +
+        `<button class="pick-btn ${dalActive}" onclick="pickGame(${idx},'dal')">&#9733; Stars</button>` +
+        `<button class="pick-btn ${oppActive}" onclick="pickGame(${idx},'opp')">${abbr}</button>` +
+        `</div></div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('schedule').innerHTML = html;
+}
+
+function renderResults() {
+  const played = Object.entries(actualResults).filter(([i, r]) => r.status === 'FINAL');
+  const totalPlayed = played.length;
+  const totalGames = games.length;
+  const remaining = totalGames - totalPlayed;
+  let correct = 0, wrong = 0;
+  played.forEach(([idx, r]) => {
+    const pick = picks[idx];
+    if (!pick) return;
+    const dalWin = r.winner === 'DAL';
+    const oppWin = r.winner !== 'DAL' && r.winner !== 'TIE' && r.winner !== '';
+    if ((pick === 'dal' && dalWin) || (pick === 'opp' && oppWin)) correct++;
+    else wrong++;
+  });
+  const pct = totalPlayed > 0 ? ((correct / totalPlayed) * 100).toFixed(1) : '--';
+  const maxPossible = correct + remaining;
+  document.getElementById('results-summary').innerHTML =
+    `<div class="stat correct"><div class="num">${correct}</div><div class="label">Correct</div><div class="sub">out of ${totalPlayed} played</div></div>` +
+    `<div class="stat wrong"><div class="num">${wrong}</div><div class="label">Wrong</div><div class="sub">out of ${totalPlayed} played</div></div>` +
+    `<div class="stat pct"><div class="num">${pct}%</div><div class="label">Accuracy</div><div class="sub">on played games</div></div>` +
+    `<div class="stat remaining"><div class="num">${remaining}</div><div class="label">Games Left</div><div class="sub">out of ${totalGames}</div></div>` +
+    `<div class="stat max"><div class="num">${maxPossible}/${totalGames}</div><div class="label">Max Possible</div><div class="sub">if you nail the rest</div></div>`;
+  const months = [
+    {id:'sep', label:'September', prefix:'09'},{id:'oct', label:'October', prefix:'10'},
+    {id:'nov', label:'November', prefix:'11'},{id:'dec', label:'December', prefix:'12'},
+    {id:'jan', label:'January', prefix:'01'},{id:'feb', label:'February', prefix:'02'},
+    {id:'mar', label:'March', prefix:'03'},{id:'apr', label:'April', prefix:'04'}
+  ];
+  let html = '';
+  months.forEach(m => {
+    const mg = games.filter((g, i) => g[0].startsWith(m.prefix));
+    if (!mg.length) return;
+    html += `<div class="month-section"><div class="month-header">${m.label} <span class="line"></span></div>`;
+    mg.forEach(g => {
+      const idx = games.indexOf(g);
+      const [date, loc, abbr, name, logo] = g;
+      const vs = loc === 'HOME' ? 'vs' : '@';
+      const locClass = loc === 'HOME' ? 'location-home' : 'location-away';
+      const locText = loc === 'HOME' ? 'Home' : 'Away';
+      const r = actualResults[idx];
+      const pick = picks[idx];
+      let statusBadge = '';
+      if (r && r.status === 'FINAL') statusBadge = `<span class="status-badge status-final">FINAL</span>`;
+      else if (r && r.status === 'LIVE') statusBadge = `<span class="status-badge status-live">LIVE</span>`;
+      else statusBadge = `<span class="status-badge status-fut">FUT</span>`;
+      let resultCol = '';
+      if (r && r.status === 'FINAL') {
+        const dalScore = loc === 'HOME' ? r.homeScore : r.awayScore;
+        const oppScore = loc === 'HOME' ? r.awayScore : r.homeScore;
+        const dalWin = r.winner === 'DAL';
+        const cls = dalWin ? 'status-win' : 'status-loss';
+        resultCol = `<div class="result-col"><span class="status-badge ${cls}">${dalScore}-${oppScore}</span></div>`;
+      } else resultCol = `<div class="result-col">-</div>`;
+      let pickCol = '';
+      if (pick) {
+        const cls = pick === 'dal' ? 'pick-dal' : 'pick-opp';
+        const label = pick === 'dal' ? 'STARS' : abbr;
+        pickCol = `<div class="pick-col"><span class="${cls}">${label}</span></div>`;
+      } else pickCol = `<div class="pick-col"><span class="no-pick">-</span></div>`;
+      let resultIcon = '';
+      if (r && r.status === 'FINAL' && pick) {
+        const dalWin = r.winner === 'DAL';
+        const oppWin = r.winner !== 'DAL' && r.winner !== 'TIE';
+        if ((pick === 'dal' && dalWin) || (pick === 'opp' && oppWin)) resultIcon = `<span style="color:#00b86b;margin-left:4px;">&#10003;</span>`;
+        else if ((pick === 'dal' && oppWin) || (pick === 'opp' && dalWin)) resultIcon = `<span style="color:#d46a7a;margin-left:4px;">&#10007;</span>`;
+      }
+      html += `<div class="game-row"><div class="game-date">${date}</div><div class="game-team"><span class="team-logo"><img src="${logo}" alt="${name}"></span> ${name}</div><div class="game-vs">${vs}</div><div class="game-location ${locClass}">${locText}</div>${statusBadge}${resultCol}${pickCol}${resultIcon}</div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('results-table').innerHTML = html;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-content-' + tab).classList.add('active');
+  if (tab === 'results') fetchResults();
+  if (tab === 'leaderboard') fetchLeaderboard();
+  if (tab === 'invite') setupInviteTab();
+}
+
+// ====== SERVER SYNC ======
+const API_BASE = window.location.origin;
+
+async function syncPicksToServer() {
+  try {
+    await fetch(API_BASE + '/api/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username, phone: localStorage.getItem(STORAGE_PREFIX + 'phone') || ''})
+    });
+    await fetch(API_BASE + '/api/save-picks', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username, picks: picks})
+    });
+  } catch(e) { console.log('Server sync unavailable (offline mode)'); }
+}
+
+async function loadPicksFromServer() {
+  try {
+    const resp = await fetch(API_BASE + '/api/user/' + encodeURIComponent(username));
+    const data = await resp.json();
+    if (data.picks) {
+      Object.entries(data.picks).forEach(([idx, pick]) => { picks[idx] = pick; });
+      savePicksToStorage();
+      renderSchedule();
+      updateCounter();
+    }
+  } catch(e) { console.log('Server load unavailable (offline mode)'); }
+}
+
+// ====== LEADERBOARD ======
+async function fetchLeaderboard() {
+  document.getElementById('leaderboard-updated').textContent = 'Loading leaderboard...';
+  try {
+    const resp = await fetch(API_BASE + '/api/leaderboard');
+    const data = await resp.json();
+    renderLeaderboard(data.leaderboard || []);
+  } catch(e) {
+    document.getElementById('leaderboard-updated').textContent = 'Could not load leaderboard. Make sure others have joined!';
+    document.getElementById('leaderboard-table').innerHTML = '<p style="text-align:center;color:#666;padding:40px;">No players yet. Share the link with friends!</p>';
+  }
+}
+
+function renderLeaderboard(entries) {
+  // Pool summary
+  let totalPlayers = entries.length;
+  let totalCorrect = entries.reduce((s, e) => s + e.correct, 0);
+  document.getElementById('pool-summary').innerHTML =
+    `<div class="stat total" style="min-width:150px;"><div class="num">${totalPlayers}</div><div class="label">Players in Pool</div></div>` +
+    `<div class="stat correct" style="min-width:150px;"><div class="num">${totalCorrect}</div><div class="label">Total Correct Picks</div></div>`;
+  
+  document.getElementById('leaderboard-updated').textContent = 'Updated just now';
+  
+  if (entries.length === 0) {
+    document.getElementById('leaderboard-table').innerHTML = '<p style="text-align:center;color:#666;padding:40px;">No players yet. Share the link with friends!</p>';
+    return;
+  }
+  
+  let html = `<div class="month-section"><div class="month-header">Leaderboard <span class="line"></span></div>`;
+  
+  entries.forEach((entry, i) => {
+    const isMe = entry.username === username;
+    const medal = i === 0 ? '&#129351;' : i === 1 ? '&#129352;' : i === 2 ? '&#129353;' : '';
+    const rankClass = isMe ? 'game-row' : 'game-row';
+    const meTag = isMe ? ' <span style="color:#006847;font-size:0.7rem;">(you)</span>' : '';
+    const pctStr = entry.played > 0 ? entry.pct + '%' : '--';
+    
+    html += `<div class="${rankClass}" style="${isMe ? 'border:1px solid rgba(0,104,71,0.3);' : ''}">` +
+      `<div class="game-date" style="min-width:50px;">${medal} #${entry.rank}</div>` +
+      `<div class="game-team" style="flex:1.5;">${entry.username}${meTag}</div>` +
+      `<div style="text-align:center;min-width:60px;font-size:0.8rem;color:#00b86b;">&#10003; ${entry.correct}</div>` +
+      `<div style="text-align:center;min-width:50px;font-size:0.8rem;color:#d46a7a;">&#10007; ${entry.wrong}</div>` +
+      `<div style="text-align:center;min-width:60px;font-size:0.8rem;color:#b4975a;">${pctStr}</div>` +
+      `</div>`;
+  });
+  
+  html += `</div>`;
+  document.getElementById('leaderboard-table').innerHTML = html;
+}
+
+// ====== SHARE LINK ======
+function showShareDialog() {
+  document.getElementById('shareOverlay').classList.remove('hidden');
+  document.getElementById('shareError').style.display = 'none';
+  // Pre-fill with user's own phone if they have one
+  const myPhone = localStorage.getItem(STORAGE_PREFIX + 'phone') || '';
+  document.getElementById('sharePhoneInput').value = myPhone;
+}
+
+function closeShareDialog() {
+  document.getElementById('shareOverlay').classList.add('hidden');
+}
+
+function getShareMessage() {
+  const url = window.location.href;
+  return `Join my Dallas Stars 2026-2027 Pick'em pool! Pick who wins each game and compete on the leaderboard. ${url}`;
+}
+
+function sendSMSSingle() {
+  const phone = document.getElementById('sharePhoneInput').value.trim().replace(/[^0-9+]/g, '');
+  if (!phone) {
+    document.getElementById('shareError').style.display = 'block';
+    return;
+  }
+  document.getElementById('shareError').style.display = 'none';
+  const msg = encodeURIComponent(getShareMessage());
+  const a = document.createElement('a');
+  a.href = `sms:${phone}?body=${msg}`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  closeShareDialog();
+}
+
+function sendSMSBulk() {
+  const raw = document.getElementById('shareBulkPhones').value.trim();
+  if (!raw) {
+    document.getElementById('shareError').style.display = 'block';
+    return;
+  }
+  document.getElementById('shareError').style.display = 'none';
+  const phones = raw.split('\n').map(p => p.trim().replace(/[^0-9+]/g, '')).filter(p => p.length > 5);
+  if (phones.length === 0) {
+    document.getElementById('shareError').style.display = 'block';
+    return;
+  }
+  const msg = encodeURIComponent(getShareMessage());
+  const a = document.createElement('a');
+  a.href = `sms:${phones[0]}?body=${msg}%0A%0A(Sent to: ${phones.join(', ')})`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  closeShareDialog();
+}
+
+function shareLink() {
+  const msg = getShareMessage();
+  if (navigator.share) {
+    navigator.share({ title: 'Dallas Stars Pick\'em Pool', text: msg, url: window.location.href })
+      .catch(() => {});
+    return;
+  }
+  copyLink();
+}
+
+function copyLink() {
+  const url = window.location.href;
+  const textarea = document.createElement('textarea');
+  textarea.value = url;
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+  alert('Link copied! Share it with friends so they join the pool.');
+  closeShareDialog();
+}
+
+// ====== MAKE A POOL / INVITE ======
+function setupInviteTab() {
+  document.getElementById('inviteYourName').value = username || 'Me';
+  document.getElementById('inviteLink').value = window.location.href;
+}
+
+function sendPickInvite() {
+  const phone = document.getElementById('pickInvitePhone').value.trim().replace(/[^0-9+]/g, '');
+  const status = document.getElementById('pickInviteStatus');
+  
+  if (!phone || phone.length < 10) {
+    status.style.display = 'inline';
+    status.style.color = '#d46a7a';
+    status.textContent = 'Enter a valid phone number';
+    return;
+  }
+  
+  const url = window.location.href;
+  const yourName = username || 'Someone';
+  const msg = encodeURIComponent(
+    `${yourName} invited you to join their Dallas Stars Pick'em pool! Pick who wins each game and compete on the leaderboard. Join here: ${url}`
+  );
+  
+  status.style.display = 'inline';
+  status.style.color = '#b4975a';
+  status.textContent = 'Opening SMS...';
+  
+  // Create an anchor element and click it - works better than window.open
+  const a = document.createElement('a');
+  a.href = `sms:${phone}?body=${msg}`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  document.getElementById('pickInvitePhone').value = '';
+  
+  setTimeout(() => {
+    status.style.color = '#00b86b';
+    status.textContent = '✓ Invite sent!';
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
+  }, 1500);
+}
+
+function sendInvite() {
+  const yourName = username || document.getElementById('inviteYourName').value;
+  const friendName = document.getElementById('inviteFriendName').value.trim();
+  const phone = document.getElementById('invitePhone').value.trim().replace(/[^0-9+]/g, '');
+  const status = document.getElementById('inviteStatus');
+  
+  if (!friendName || !phone) {
+    status.style.display = 'block';
+    status.style.color = '#d46a7a';
+    status.textContent = 'Please enter your friend\'s name and phone number.';
+    return;
+  }
+  
+  if (phone.length < 10) {
+    status.style.display = 'block';
+    status.style.color = '#d46a7a';
+    status.textContent = 'Please enter a valid phone number with country code.';
+    return;
+  }
+  
+  const url = window.location.href;
+  const msg = encodeURIComponent(
+    `${yourName} invited you to join their Dallas Stars Pick'em pool! Pick who wins each game and compete on the leaderboard. Join here: ${url}`
+  );
+  
+  status.style.display = 'block';
+  status.style.color = '#b4975a';
+  status.textContent = `Opening SMS for ${friendName} at ${phone}...`;
+  
+  const a = document.createElement('a');
+  a.href = `sms:${phone}?body=${msg}`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  try {
+    fetch(API_BASE + '/api/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: friendName.replace(/\s/g, '_'), phone: phone})
+    });
+  } catch(e) {}
+  
+  setTimeout(() => {
+    status.style.color = '#00b86b';
+    status.textContent = `✓ Invite sent to ${friendName}! When they join, they'll appear on the leaderboard.`;
+  }, 2000);
+}
+
+function copyInviteLink() {
+  const input = document.getElementById('inviteLink');
+  input.select();
+  document.execCommand('copy');
+  const btn = document.querySelector('#tab-content-invite button:last-of-type');
+  btn.textContent = 'Copied!';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+}
+
+// ====== OVERRIDE SAVE TO SYNC ======
+// Override resetPicks to also sync
+const origResetPicks = resetPicks;
+resetPicks = function() {
+  if (!confirm('Reset all your picks?')) return;
+  picks = {};
+  localStorage.removeItem(getStorageKey());
+  renderSchedule();
+  updateCounter();
+  syncPicksToServer();
+};
+
+// ====== INIT ======
+function initApp() {
+  // Update user bar
+  document.getElementById('userDisplayName').textContent = username;
+  document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
+  
+  // Load picks for this user
+  loadPicks();
+  renderSchedule();
+  updateCounter();
+  
+  // Register with server and load picks from server
+  syncPicksToServer().then(() => loadPicksFromServer());
+  
+  // Schedule daily auto-refresh at 12:00 PM
+  scheduleDailyRefresh();
+}
+
+// Start
+checkSavedUser();
+</script>
+</body>
+</html>
