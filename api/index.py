@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, Dict
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from supabase import create_client, Client
 
@@ -21,7 +21,7 @@ def get_supabase():
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     return supabase
 
-# --- FastAPI App ---
+# --- FastAPI App (routes without /api prefix - Vercel handles that) ---
 app = FastAPI(title="Dallas Stars Pick'em")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -36,24 +36,21 @@ class SavePicksData(BaseModel):
 
 # --- API Routes ---
 @app.get("/api/leaderboard")
+@app.get("/leaderboard")
 def leaderboard():
     sb = get_supabase()
     if not sb:
         raise HTTPException(503, "Database not configured")
     
-    # Get all users
     users_resp = sb.table("users").select("username, phone").execute()
     users = users_resp.data if users_resp.data else []
     
-    # Get game results
     results_resp = sb.table("game_results").select("game_idx, winner").filter("status", "eq", "FINAL").execute()
     results = {r["game_idx"]: r["winner"] for r in (results_resp.data or [])}
     
-    # Get all picks
     picks_resp = sb.table("picks").select("username, game_idx, pick").execute()
     picks_data = picks_resp.data if picks_resp.data else []
     
-    # Group picks by user
     user_picks_map = {}
     for p in picks_data:
         user_picks_map.setdefault(p["username"], []).append((p["game_idx"], p["pick"]))
@@ -61,8 +58,7 @@ def leaderboard():
     leaderboard = []
     for u in users:
         user_picks = user_picks_map.get(u["username"], [])
-        correct = 0
-        wrong = 0
+        correct = 0; wrong = 0
         for gidx, pick in user_picks:
             if gidx in results:
                 winner = results[gidx]
@@ -75,13 +71,9 @@ def leaderboard():
         played = correct + wrong
         pct = round((correct / played * 100), 1) if played > 0 else 0
         leaderboard.append({
-            'username': u["username"],
-            'phone': u.get("phone", "") or "",
-            'correct': correct,
-            'wrong': wrong,
-            'played': played,
-            'pct': pct,
-            'total_picks': len(user_picks)
+            'username': u["username"], 'phone': u.get("phone", "") or '',
+            'correct': correct, 'wrong': wrong, 'played': played,
+            'pct': pct, 'total_picks': len(user_picks)
         })
     
     leaderboard.sort(key=lambda x: (-x['correct'], -x['pct']))
@@ -90,6 +82,7 @@ def leaderboard():
     return {'leaderboard': leaderboard}
 
 @app.get("/api/user/{username_param}")
+@app.get("/user/{username_param}")
 def get_user(username_param: str):
     sb = get_supabase()
     if not sb:
@@ -104,6 +97,7 @@ def get_user(username_param: str):
     return {'username': username_param, 'phone': phone or '', 'picks': picks_dict}
 
 @app.get("/api/users")
+@app.get("/users")
 def get_users():
     sb = get_supabase()
     if not sb:
@@ -114,6 +108,7 @@ def get_users():
     return {'users': users}
 
 @app.get("/api/results")
+@app.get("/results")
 def get_results():
     sb = get_supabase()
     if not sb:
@@ -123,14 +118,13 @@ def get_results():
     results = {}
     for r in (resp.data or []):
         results[str(r["game_idx"])] = {
-            'winner': r["winner"],
-            'homeScore': r["home_score"],
-            'awayScore': r["away_score"],
-            'status': r["status"]
+            'winner': r["winner"], 'homeScore': r["home_score"],
+            'awayScore': r["away_score"], 'status': r["status"]
         }
     return {'results': results}
 
 @app.post("/api/register")
+@app.post("/register")
 def register(data: RegisterData):
     sb = get_supabase()
     if not sb:
@@ -152,6 +146,7 @@ def register(data: RegisterData):
     return {'status': 'ok', 'username': username}
 
 @app.post("/api/save-picks")
+@app.post("/save-picks")
 def save_picks(data: SavePicksData):
     sb = get_supabase()
     if not sb:
@@ -171,10 +166,20 @@ def save_picks(data: SavePicksData):
 
 @app.get("/health")
 def health():
-    sb = get_supabase()
-    db_status = "connected" if sb else "not configured"
-    return {"status": "ok", "database": db_status}
+    return {"status": "ok"}
 
-# For Vercel serverless - this is needed
+# Serve the HTML page
+@app.get("/")
+@app.get("/dallas-stars-schedule.html")
+def serve_html():
+    html_path = os.path.join(os.path.dirname(__file__), '..', 'dallas-stars-schedule.html')
+    if not os.path.exists(html_path):
+        html_path = os.path.join(os.path.dirname(__file__), 'dallas-stars-schedule.html')
+    if not os.path.exists(html_path):
+        raise HTTPException(404, "Page not found")
+    with open(html_path) as f:
+        return HTMLResponse(f.read())
+
+# For Vercel - wrap with Mangum
 from mangum import Mangum
 handler = Mangum(app)
