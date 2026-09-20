@@ -168,6 +168,30 @@ def save_picks(data: SavePicksData):
 def health():
     return {"status": "ok"}
 
+@app.post("/api/save-results")
+@app.post("/save-results")
+def save_results(data: dict):
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(503, "Database not configured")
+    results = data.get("results", {})
+    saved = 0
+    for game_idx_str, result in results.items():
+        try:
+            game_idx = int(game_idx_str)
+            sb.table("game_results").upsert({
+                "game_idx": game_idx,
+                "winner": result.get("winner", ""),
+                "home_score": str(result.get("homeScore", "")),
+                "away_score": str(result.get("awayScore", "")),
+                "status": result.get("status", ""),
+                "last_updated": datetime.now().isoformat()
+            }, on_conflict="game_idx").execute()
+            saved += 1
+        except:
+            pass
+    return {"status": "ok", "saved": saved}
+
 # Serve the HTML page
 @app.get("/")
 @app.get("/dallas-stars-schedule.html")

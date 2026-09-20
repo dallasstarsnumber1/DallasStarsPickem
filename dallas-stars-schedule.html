@@ -423,6 +423,7 @@ function savePicksToStorage() {
 async function fetchResults() {
   const weeks = ['2026-09-19','2026-09-26','2026-10-03','2026-10-10','2026-10-17','2026-10-24','2026-10-31','2026-11-07','2026-11-14','2026-11-21','2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-06','2027-02-13','2027-02-20','2027-02-27','2027-03-06','2027-03-13','2027-03-20','2027-03-27','2027-04-03','2027-04-10'];
   const seen = new Set();
+  const resultsToSave = {};
   for (const start of weeks) {
     try {
       const resp = await fetch(NHL_API_BASE + start);
@@ -449,11 +450,24 @@ async function fetchResults() {
               else winner = 'TIE';
             }
             actualResults[i] = { winner, homeScore: homeScore != null ? homeScore : '-', awayScore: awayScore != null ? awayScore : '-', status, home, away };
+            // Save FINAL results to the server
+            if (status === 'FINAL' && winner) {
+              resultsToSave[i] = { winner, homeScore: homeScore != null ? homeScore : '-', awayScore: awayScore != null ? awayScore : '-', status, home, away };
+            }
             break;
           }
         }
       }
     } catch(e) {}
+  }
+  // Push results to the server so leaderboard can use them
+  if (Object.keys(resultsToSave).length > 0) {
+    try {
+      await fetch(API_BASE + '/api/save-results', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ results: resultsToSave })
+      });
+    } catch(e) { console.log('Could not save results to server'); }
   }
   const now = new Date();
   localStorage.setItem(STORAGE_PREFIX + 'lastRefresh', now.toISOString());
