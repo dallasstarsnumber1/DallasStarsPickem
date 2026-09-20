@@ -475,21 +475,85 @@ async function fetchResults() {
   renderResults();
 }
 
-// ====== DAILY AUTO-REFRESH AT 12:00 PM ======
+// ====== AUTO REFRESH: Check NHL for recent games ======
+async function fetchRecentResults() {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dates = [
+    today.toISOString().slice(0, 10),
+    yesterday.toISOString().slice(0, 10)
+  ];
+  const seen = new Set();
+  const resultsToSave = {};
+  for (const dateStr of dates) {
+    try {
+      const resp = await fetch(NHL_API_BASE + dateStr);
+      const data = await resp.json();
+      for (const g of (data.games || [])) {
+        if (g.homeTeam?.abbrev !== 'DAL' && g.awayTeam?.abbrev !== 'DAL') continue;
+        const gid = g.id;
+        if (seen.has(gid)) continue;
+        seen.add(gid);
+        const home = g.homeTeam?.abbrev;
+        const away = g.awayTeam?.abbrev;
+        const homeScore = g.homeTeam?.score;
+        const awayScore = g.awayTeam?.score;
+        const status = g.gameState;
+        const dateMMDD = dateStr.slice(5);
+        const opp = home === 'DAL' ? away : home;
+        const loc = home === 'DAL' ? 'HOME' : 'AWAY';
+        for (let i = 0; i < games.length; i++) {
+          if (games[i][0] === dateMMDD && games[i][1] === loc && games[i][2] === opp) {
+            let winner = '';
+            if (status === 'FINAL' && homeScore != null && awayScore != null) {
+              if (homeScore > awayScore) winner = home;
+              else if (awayScore > homeScore) winner = away;
+              else winner = 'TIE';
+            }
+            actualResults[i] = { winner, homeScore: homeScore != null ? homeScore : '-', awayScore: awayScore != null ? awayScore : '-', status, home, away };
+            if (status === 'FINAL' && winner) {
+              resultsToSave[i] = { winner, homeScore: homeScore != null ? homeScore : '-', awayScore: awayScore != null ? awayScore : '-', status, home, away };
+            }
+            break;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+  // Save results to Supabase
+  if (Object.keys(resultsToSave).length > 0) {
+    try {
+      await fetch(API_BASE + '/api/save-results', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ results: resultsToSave })
+      });
+      console.log('Saved ' + Object.keys(resultsToSave).length + ' results to Supabase');
+    } catch(e) { console.log('Could not save results'); }
+  }
+  // Also check season lock
+  checkSeasonLock();
+}
+
+// ====== SCHEDULED REFRESH AT 12:00 PM AND 12:00 AM ======
 function scheduleDailyRefresh() {
   const now = new Date();
-  const target = new Date(now);
-  target.setHours(12, 0, 0, 0); // 12:00 PM
-  if (now >= target) {
-    target.setDate(target.getDate() + 1); // next day
+  const targets = [12, 0]; // 12:00 PM and 12:00 AM (midnight)
+  for (const hour of targets) {
+    const target = new Date(now);
+    target.setHours(hour, 0, 0, 0);
+    if (now >= target) {
+      target.setDate(target.getDate() + 1);
+    }
+    const msUntil = target - now;
+    setTimeout(() => {
+      fetchRecentResults();
+    }, msUntil);
   }
-  const msUntilNoon = target - now;
-  setTimeout(() => {
-    fetchResults();
-    // Reschedule for next day
-    scheduleDailyRefresh();
-  }, msUntilNoon);
-  console.log(`Next NHL auto-refresh scheduled for: ${target.toLocaleString()}`);
+  // Re-plan schedules after the next one fires
+  setTimeout(() => scheduleDailyRefresh(), Math.min(...targets.map(h => { let t = new Date(now); t.setHours(h,0,0,0); return t > now ? t - now : t - now + 86400000; })) + 60000);
+  const nextMs = Math.min(...targets.map(h => { let t = new Date(now); t.setHours(h,0,0,0); return t > now ? t - now : t - now + 86400000; }));
+  console.log(`Next auto-refresh in ${Math.round(nextMs/60000)} minutes`);
 }
 
 // ====== PICKS ======
