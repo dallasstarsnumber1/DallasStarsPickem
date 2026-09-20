@@ -366,6 +366,7 @@ const games = [
 
 const STORAGE_PREFIX = 'dallasStars_';
 const NHL_API_BASE = 'https://api-web.nhle.com/v1/club-schedule/DAL/week/';
+const NHL_DATE_API = 'https://api-web.nhle.com/v1/schedule/';
 
 let picks = {};
 let actualResults = {};
@@ -421,14 +422,34 @@ function savePicksToStorage() {
 
 // ====== NHL API ======
 async function fetchResults() {
+  const today = new Date();
   const weeks = ['2026-09-19','2026-09-26','2026-10-03','2026-10-10','2026-10-17','2026-10-24','2026-10-31','2026-11-07','2026-11-14','2026-11-21','2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-06','2027-02-13','2027-02-20','2027-02-27','2027-03-06','2027-03-13','2027-03-20','2027-03-27','2027-04-03','2027-04-10'];
   const seen = new Set();
   const resultsToSave = {};
   for (const start of weeks) {
+    let gamesData = null;
+    // Try club-schedule endpoint (returns dates with games)
     try {
       const resp = await fetch(NHL_API_BASE + start);
-      const data = await resp.json();
-      for (const g of (data.games || [])) {
+      const d = await resp.json();
+      if (d.dates) {
+        gamesData = [];
+        d.dates.forEach(dt => { if (dt.games) dt.games.forEach(g => gamesData.push(g)); });
+      } else if (d.games) {
+        gamesData = d.games;
+      }
+    } catch(e) {}
+    // Fallback: try schedule endpoint per individual date
+    if (!gamesData || gamesData.length === 0) {
+      const dateStr = start;
+      try {
+        const resp = await fetch(NHL_DATE_API + dateStr);
+        const d = await resp.json();
+        gamesData = d.games || null;
+      } catch(e) {}
+    }
+    if (!gamesData) continue;
+    for (const g of gamesData) {
         const gid = g.id;
         if (seen.has(gid)) continue;
         seen.add(gid);
@@ -480,17 +501,45 @@ async function fetchRecentResults() {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const dates = [
+  
+  // Build list of dates to check: today + yesterday + any game dates in the past
+  const datesToCheck = [
     today.toISOString().slice(0, 10),
     yesterday.toISOString().slice(0, 10)
   ];
+  // Add any game dates from the schedule that are in the past
+  games.forEach(g => {
+    const year = '20' + g[0].slice(0,2);
+    const month = g[0].slice(3,5);
+    const day = g[0].slice(6,8);
+    const dateStr = year + '-' + month + '-' + day;
+    if (new Date(dateStr) <= today && !datesToCheck.includes(dateStr)) {
+      datesToCheck.push(dateStr);
+    }
+  });
   const seen = new Set();
   const resultsToSave = {};
-  for (const dateStr of dates) {
+  for (const dateStr of datesToCheck) {
+    // Try both NHL API endpoints
+    let gamesData = null;
     try {
-      const resp = await fetch(NHL_API_BASE + dateStr);
-      const data = await resp.json();
-      for (const g of (data.games || [])) {
+      const resp = await fetch(NHL_DATE_API + dateStr);
+      const d = await resp.json();
+      gamesData = d.games || null;
+    } catch(e) {}
+    if (!gamesData || gamesData.length === 0) {
+      try {
+        const resp = await fetch(NHL_API_BASE + dateStr);
+        const d = await resp.json();
+        // club-schedule returns dates array with games inside
+        if (d.dates) {
+          gamesData = [];
+          d.dates.forEach(dt => { if (dt.games) dt.games.forEach(g => gamesData.push(g)); });
+        }
+      } catch(e) {}
+    }
+    if (!gamesData) continue;
+    for (const g of gamesData) {
         if (g.homeTeam?.abbrev !== 'DAL' && g.awayTeam?.abbrev !== 'DAL') continue;
         const gid = g.id;
         if (seen.has(gid)) continue;
@@ -561,13 +610,45 @@ let seasonLocked = false;
 let seasonLockMsg = '';
 
 async function checkSeasonLock() {
+  const today = new Date();
+  // First check if server already knows it's locked
+  try {
+    const resp = await fetch(API_BASE + '/api/season-status');
+    const d = await resp.json();
+    if (d.locked) { seasonLocked = true; seasonLockMsg = d.message; return { locked: true, message: d.message }; }
+  } catch(e) {}
   const weeks = ['2026-09-19','2026-09-26','2026-10-03','2026-10-10','2026-10-17','2026-10-24','2026-10-31','2026-11-07','2026-11-14','2026-11-21','2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-06','2027-02-13','2027-02-20','2027-02-27','2027-03-06','2027-03-13','2027-03-20','2027-03-27','2027-04-03','2027-04-10'];
+  // Add game dates from the schedule that are in the past
+  const allDates = [...weeks];
+  games.forEach(g => {
+    const year = '20' + g[0].slice(0,2);
+    const month = g[0].slice(3,5);
+    const day = g[0].slice(6,8);
+    const dateStr = year + '-' + month + '-' + day;
+    if (new Date(dateStr) <= today && !allDates.includes(dateStr)) {
+      allDates.push(dateStr);
+    }
+  });
   const seen = new Set();
-  for (const start of weeks) {
+  for (const start of allDates) {
+    let gamesData = null;
     try {
-      const resp = await fetch(NHL_API_BASE + start);
-      const data = await resp.json();
-      for (const g of (data.games || [])) {
+      const resp = await fetch(NHL_DATE_API + start);
+      const d = await resp.json();
+      gamesData = d.games || null;
+    } catch(e) {}
+    if (!gamesData || gamesData.length === 0) {
+      try {
+        const resp = await fetch(NHL_API_BASE + start);
+        const d = await resp.json();
+        if (d.dates) {
+          gamesData = [];
+          d.dates.forEach(dt => { if (dt.games) dt.games.forEach(g => gamesData.push(g)); });
+        }
+      } catch(e) {}
+    }
+    if (!gamesData) continue;
+    for (const g of gamesData) {
         if (g.homeTeam?.abbrev !== 'DAL' && g.awayTeam?.abbrev !== 'DAL') continue;
         const gid = g.id;
         if (seen.has(gid)) continue;
