@@ -477,9 +477,8 @@ async function fetchResults() {
             }
             break;
           }
-        }
-      }
-    } catch(e) {}
+        }  // closes for over gamesData
+    }  // closes for over start
   }
   // Push results to the server so leaderboard can use them
   if (Object.keys(resultsToSave).length > 0) {
@@ -566,10 +565,9 @@ async function fetchRecentResults() {
             }
             break;
           }
-        }
-      }
-    } catch(e) {}
-  }
+        }  // closes for loop over i
+      }  // closes for loop over gamesData
+    }  // closes for loop over datesToCheck
   // Save results to Supabase
   if (Object.keys(resultsToSave).length > 0) {
     try {
@@ -664,10 +662,9 @@ async function checkSeasonLock() {
             seasonLockMsg = '🔒 Season locked! Picks can no longer be changed.';
           }
           return { locked: true, message: seasonLockMsg };
-        }
-      }
-    } catch(e) {}
-  }
+        }  // closes if (g.gameState === ...)
+    }  // closes for (const g of gamesData)
+  }  // closes for (const start of allDates)
   return { locked: false, message: '' };
 }
 
