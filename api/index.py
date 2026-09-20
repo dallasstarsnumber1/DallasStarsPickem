@@ -14,12 +14,47 @@ from supabase import create_client, Client
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://fnosqjpdvqzwiqfckowf.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZub3NxanBkdnF6d2lxZmNrb3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzYwMjUsImV4cCI6MjEwNDg1MjAyNX0.iDD-ymzz3d4fM20LeBg5R_Z7sEqiVs1eCzUfkoCHNY4")
 supabase: Client = None
+seasonLocked = False
+seasonLockMsg = ""
 
 def get_supabase():
     global supabase
     if supabase is None and SUPABASE_URL and SUPABASE_KEY:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     return supabase
+
+def check_season_locked(sb=None):
+    """Check if any Dallas Stars game has started or finished"""
+    global seasonLocked, seasonLockMsg
+    if seasonLocked:
+        return {"locked": True, "message": seasonLockMsg}
+    if sb is None:
+        sb = get_supabase()
+    if sb:
+        try:
+            resp = sb.table("game_results").select("game_idx, status").neq("status", "").execute()
+            if resp.data and any(r["status"] in ("FINAL", "LIVE", "CRIT") for r in resp.data):
+                seasonLocked = True
+                seasonLockMsg = "🔒 Season locked! Picks can no longer be changed."
+                return {"locked": True, "message": seasonLockMsg}
+        except:
+            pass
+    # Also check via NHL API if no results in DB yet
+    try:
+        import urllib.request, json
+        for week in ['2026-09-19','2026-09-26','2026-10-03','2026-10-10']:
+            req = urllib.request.Request(f"https://api-web.nhle.com/v1/schedule/{week}")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            for g in data.get("games", []):
+                if g.get("homeTeam", {}).get("abbrev") == "DAL" or g.get("awayTeam", {}).get("abbrev") == "DAL":
+                    if g.get("gameState") in ("LIVE", "FINAL", "CRIT"):
+                        seasonLocked = True
+                        seasonLockMsg = "🔒 Season locked! Picks can no longer be changed."
+                        return {"locked": True, "message": seasonLockMsg}
+    except:
+        pass
+    return {"locked": False, "message": ""}
 
 # --- FastAPI App (routes without /api prefix - Vercel handles that) ---
 app = FastAPI(title="Dallas Stars Pick'em")
@@ -145,6 +180,11 @@ def register(data: RegisterData):
     
     return {'status': 'ok', 'username': username}
 
+@app.get("/api/season-status")
+def season_status():
+    """Check if the season is locked (any game has started/finished)"""
+    return {"locked": seasonLocked, "message": seasonLockMsg}
+
 @app.post("/api/save-picks")
 @app.post("/save-picks")
 def save_picks(data: SavePicksData):
@@ -155,6 +195,11 @@ def save_picks(data: SavePicksData):
     username = data.username.strip()
     if not username:
         raise HTTPException(400, 'Username required')
+    
+    # Check if season is locked
+    locked_info = check_season_locked(sb)
+    if locked_info["locked"]:
+        raise HTTPException(403, locked_info["message"])
     
     for game_idx, pick in data.picks.items():
         sb.table("picks").upsert(

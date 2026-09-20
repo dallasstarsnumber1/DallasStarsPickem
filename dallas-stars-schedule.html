@@ -493,7 +493,44 @@ function scheduleDailyRefresh() {
 }
 
 // ====== PICKS ======
+let seasonLocked = false;
+let seasonLockMsg = '';
+
+async function checkSeasonLock() {
+  const weeks = ['2026-09-19','2026-09-26','2026-10-03','2026-10-10','2026-10-17','2026-10-24','2026-10-31','2026-11-07','2026-11-14','2026-11-21','2026-11-28','2026-12-05','2026-12-12','2026-12-19','2026-12-26','2027-01-02','2027-01-09','2027-01-16','2027-01-23','2027-01-30','2027-02-06','2027-02-13','2027-02-20','2027-02-27','2027-03-06','2027-03-13','2027-03-20','2027-03-27','2027-04-03','2027-04-10'];
+  const seen = new Set();
+  for (const start of weeks) {
+    try {
+      const resp = await fetch(NHL_API_BASE + start);
+      const data = await resp.json();
+      for (const g of (data.games || [])) {
+        if (g.homeTeam?.abbrev !== 'DAL' && g.awayTeam?.abbrev !== 'DAL') continue;
+        const gid = g.id;
+        if (seen.has(gid)) continue;
+        seen.add(gid);
+        if (g.gameState === 'LIVE' || g.gameState === 'FINAL' || g.gameState === 'CRIT') {
+          seasonLocked = true;
+          if (g.gameState === 'FINAL') {
+            const dateNice = g.gameDate.slice(5).replace('-', '/');
+            seasonLockMsg = `🔒 Season locked! The ${dateNice} game has already finished. No more pick changes.`;
+          } else if (g.gameState === 'LIVE') {
+            seasonLockMsg = '🔒 Season locked! A game is currently live. No more pick changes.';
+          } else {
+            seasonLockMsg = '🔒 Season locked! Picks can no longer be changed.';
+          }
+          return { locked: true, message: seasonLockMsg };
+        }
+      }
+    } catch(e) {}
+  }
+  return { locked: false, message: '' };
+}
+
 function pickGame(idx, choice) {
+  if (seasonLocked) {
+    alert(seasonLockMsg);
+    return;
+  }
   if (picks[idx] === choice) delete picks[idx];
   else picks[idx] = choice;
   renderSchedule();
@@ -503,6 +540,10 @@ function pickGame(idx, choice) {
 }
 
 function resetPicks() {
+  if (seasonLocked) {
+    alert(seasonLockMsg);
+    return;
+  }
   if (!confirm('Reset all your picks?')) return;
   picks = {};
   localStorage.removeItem(getStorageKey());
@@ -529,6 +570,10 @@ function renderSchedule() {
     {id:'mar', label:'March', prefix:'03'},{id:'apr', label:'April', prefix:'04'}
   ];
   let html = '';
+  // Show lock banner if season is locked
+  if (seasonLocked) {
+    html += `<div style="background:rgba(212,106,122,0.15);border:1px solid rgba(212,106,122,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;text-align:center;font-size:0.9rem;color:#d46a7a;">${seasonLockMsg}</div>`;
+  }
   months.forEach(m => {
     const mg = games.filter((g, i) => g[0].startsWith(m.prefix));
     if (!mg.length) return;
@@ -634,6 +679,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('tab-content-' + tab).classList.add('active');
+  if (tab === 'pick') { renderSchedule(); checkSeasonLock().then(r => { if (r.locked) { renderSchedule(); } }); }
   if (tab === 'results') fetchResults();
   if (tab === 'leaderboard') fetchLeaderboard();
   if (tab === 'invite') setupInviteTab();
@@ -924,6 +970,9 @@ function initApp() {
   
   // Register with server and load picks from server
   syncPicksToServer().then(() => loadPicksFromServer());
+  
+  // Check if season is locked (game already played)
+  checkSeasonLock().then(r => { if (r.locked) { renderSchedule(); } });
   
   // Schedule daily auto-refresh at 12:00 PM
   scheduleDailyRefresh();
