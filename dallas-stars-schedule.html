@@ -926,7 +926,7 @@ function renderLeaderboard(entries) {
     const medal = i === 0 ? '&#129351;' : i === 1 ? '&#129352;' : i === 2 ? '&#129353;' : '';
     const rankClass = isMe ? 'game-row' : 'game-row';
     const meTag = isMe ? ' <span style="color:#006847;font-size:0.7rem;">(you)</span>' : '';
-    const pctStr = entry.played > 0 ? entry.pct + '%' : '--';
+    const pctStr = entry.played > 0 ? entry.pct + '%' : '0%';
     
     html += `<div class="${rankClass}" style="${isMe ? 'border:1px solid rgba(0,104,71,0.3);' : ''}">` +
       `<div class="game-date" style="min-width:50px;">${medal} #${entry.rank}</div>` +
