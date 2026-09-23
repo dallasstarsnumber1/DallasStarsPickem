@@ -669,8 +669,9 @@ async function checkSeasonLock() {
 }
 
 function pickGame(idx, choice) {
-  if (seasonLocked) {
-    alert(seasonLockMsg);
+  // Only lock picks for games that already have a FINAL/LIVE result
+  if (actualResults[idx] && (actualResults[idx].status === 'FINAL' || actualResults[idx].status === 'LIVE' || actualResults[idx].status === 'CRIT')) {
+    alert('This game already happened! Picks cannot be changed for completed games.');
     return;
   }
   if (picks[idx] === choice) delete picks[idx];
@@ -682,8 +683,16 @@ function pickGame(idx, choice) {
 }
 
 function resetPicks() {
-  if (seasonLocked) {
-    alert(seasonLockMsg);
+  // Check if ANY game has been completed - don't allow full reset
+  let hasLocked = false;
+  for (const idx in actualResults) {
+    if (actualResults[idx].status === 'FINAL' || actualResults[idx].status === 'LIVE' || actualResults[idx].status === 'CRIT') {
+      hasLocked = true;
+      break;
+    }
+  }
+  if (hasLocked) {
+    alert('Cannot reset all picks because some games have already been played.');
     return;
   }
   if (!confirm('Reset all your picks?')) return;
@@ -712,9 +721,10 @@ function renderSchedule() {
     {id:'mar', label:'March', prefix:'03'},{id:'apr', label:'April', prefix:'04'}
   ];
   let html = '';
-  // Show lock banner if season is locked
-  if (seasonLocked) {
-    html += `<div style="background:rgba(212,106,122,0.15);border:1px solid rgba(212,106,122,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;text-align:center;font-size:0.9rem;color:#d46a7a;">${seasonLockMsg}</div>`;
+  // Show info banner for completed games
+  const completedCount = Object.values(actualResults).filter(r => r && (r.status === 'FINAL' || r.status === 'LIVE' || r.status === 'CRIT')).length;
+  if (completedCount > 0) {
+    html += `<div style="background:rgba(0,104,71,0.10);border:1px solid rgba(0,104,71,0.2);border-radius:10px;padding:10px 16px;margin-bottom:16px;text-align:center;font-size:0.85rem;color:#00b86b;">${completedCount} game(s) completed. Future games can still be picked!</div>`;
   }
   months.forEach(m => {
     const mg = games.filter((g, i) => g[0].startsWith(m.prefix));
@@ -729,13 +739,17 @@ function renderSchedule() {
       const pick = picks[idx];
       const dalActive = pick === 'dal' ? 'active-dal' : '';
       const oppActive = pick === 'opp' ? 'active-opp' : '';
+      const isLocked = actualResults[idx] && (actualResults[idx].status === 'FINAL' || actualResults[idx].status === 'LIVE' || actualResults[idx].status === 'CRIT');
       html += `<div class="game-row">` +
         `<div class="game-date">${date}</div>` +
         `<div class="game-team"><span class="team-logo"><img src="${logo}" alt="${name}"></span> ${name}</div>` +
         `<div class="game-vs">${vs}</div><div class="game-location ${locClass}">${locText}</div>` +
         `<div class="pick-group">` +
-        `<button class="pick-btn ${dalActive}" onclick="pickGame(${idx},'dal')">&#9733; Stars</button>` +
-        `<button class="pick-btn ${oppActive}" onclick="pickGame(${idx},'opp')">${abbr}</button>` +
+        `${isLocked
+          ? `<span style="font-size:0.85rem;color:#888;">🔒 ${actualResults[idx].homeScore}-${actualResults[idx].awayScore} ${actualResults[idx].winner === 'DAL' ? '✅ W' : '❌ L'}</span>`
+          : `<button class="pick-btn ${dalActive}" onclick="pickGame(${idx},'dal')">&#9733; Stars</button>` +
+        `<button class="pick-btn ${oppActive}" onclick="pickGame(${idx},'opp')">${abbr}</button>`
+        }` +
         `</div></div>`;
     });
     html += `</div>`;

@@ -196,18 +196,34 @@ def save_picks(data: SavePicksData):
     if not username:
         raise HTTPException(400, 'Username required')
     
-    # Check if season is locked
-    locked_info = check_season_locked(sb)
-    if locked_info["locked"]:
-        raise HTTPException(403, locked_info["message"])
+    # Get which game indices are already completed/live (locked)
+    locked_indices = set()
+    try:
+        resp = sb.table("game_results").select("game_idx, status").execute()
+        if resp.data:
+            for r in resp.data:
+                if r.get("status") in ("FINAL", "LIVE", "CRIT"):
+                    locked_indices.add(r["game_idx"])
+    except:
+        pass
     
+    # Only reject picks that try to change a locked game
+    rejected = []
+    saved_count = 0
     for game_idx, pick in data.picks.items():
-        sb.table("picks").upsert(
-            {"username": username, "game_idx": int(game_idx), "pick": pick},
-            on_conflict="username,game_idx"
-        ).execute()
+        if int(game_idx) in locked_indices:
+            rejected.append(str(game_idx))
+        else:
+            sb.table("picks").upsert(
+                {"username": username, "game_idx": int(game_idx), "pick": pick},
+                on_conflict="username,game_idx"
+            ).execute()
+            saved_count += 1
     
-    return {'status': 'ok', 'saved': len(data.picks)}
+    if rejected:
+        return {'status': 'partial', 'saved': saved_count, 'locked_games': rejected}
+    
+    return {'status': 'ok', 'saved': saved_count}
 
 @app.get("/health")
 def health():
