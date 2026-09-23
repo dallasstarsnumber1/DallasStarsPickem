@@ -850,10 +850,18 @@ async function syncPicksToServer() {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: username, phone: localStorage.getItem(STORAGE_PREFIX + 'phone') || ''})
     });
-    await fetch(API_BASE + '/api/save-picks', {
+    const resp = await fetch(API_BASE + '/api/save-picks', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: username, picks: picks})
     });
+    const data = await resp.json();
+    // If server rejected some locked games, remove them from local picks
+    if (data.status === 'partial' && data.locked_games && data.locked_games.length > 0) {
+      data.locked_games.forEach(idx => { delete picks[idx]; });
+      savePicksToStorage();
+      renderSchedule();
+      updateCounter();
+    }
   } catch(e) { console.log('Server sync unavailable (offline mode)'); }
 }
 
@@ -868,6 +876,19 @@ async function loadPicksFromServer() {
       updateCounter();
     }
   } catch(e) { console.log('Server load unavailable (offline mode)'); }
+}
+
+async function loadResultsFromServer() {
+  try {
+    const resp = await fetch(API_BASE + '/api/results');
+    const data = await resp.json();
+    if (data.results) {
+      Object.entries(data.results).forEach(([idx, r]) => {
+        actualResults[idx] = r;
+      });
+      renderSchedule();
+    }
+  } catch(e) { console.log('Could not load results from server'); }
 }
 
 // ====== LEADERBOARD ======
@@ -1105,6 +1126,18 @@ function copyInviteLink() {
 // Override resetPicks to also sync
 const origResetPicks = resetPicks;
 resetPicks = function() {
+  // Check if ANY game has been completed - don't allow full reset
+  let hasLocked = false;
+  for (const idx in actualResults) {
+    if (actualResults[idx].status === 'FINAL' || actualResults[idx].status === 'LIVE' || actualResults[idx].status === 'CRIT') {
+      hasLocked = true;
+      break;
+    }
+  }
+  if (hasLocked) {
+    alert('Cannot reset all picks because some games have already been played.');
+    return;
+  }
   if (!confirm('Reset all your picks?')) return;
   picks = {};
   localStorage.removeItem(getStorageKey());
@@ -1126,6 +1159,9 @@ function initApp() {
   
   // Register with server and load picks from server
   syncPicksToServer().then(() => loadPicksFromServer());
+  
+  // Load saved game results from server (so completed games show as locked)
+  loadResultsFromServer();
   
   // Check if season is locked (game already played)
   checkSeasonLock().then(r => { if (r.locked) { renderSchedule(); } });
